@@ -4,23 +4,23 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 const stage=document.querySelector('.stage'),status=document.querySelector('#status');
 const scene=new THREE.Scene();scene.background=new THREE.Color('#e9e3d8');
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.3;stage.prepend(renderer.domElement);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.95;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;stage.prepend(renderer.domElement);
 renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();window.showMaquetteError(new Error('WebGL context lost'));});
-const envScene=new THREE.Scene();envScene.background=new THREE.Color(0xded5c5);const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(envScene,.04).texture;pmrem.dispose();scene.environmentIntensity=.8;
+const envScene=new THREE.Scene();envScene.background=new THREE.Color(0xded5c5);const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(envScene,.04).texture;pmrem.dispose();scene.environmentIntensity=.55;
 const camera=new THREE.PerspectiveCamera(40,1,.05,250),controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.maxPolarAngle=Math.PI*.49;controls.minDistance=2;controls.maxDistance=65;
-scene.add(new THREE.HemisphereLight(0xfff2d9,0x80684f,2.6));
-const key=new THREE.DirectionalLight(0xffe7c7,3);key.position.set(-8,22,15);scene.add(key);const fill=new THREE.DirectionalLight(0xe7efff,2);fill.position.set(23,13,-15);scene.add(fill);
-const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:0xd8d1c6,roughness:.9}));floor.rotation.x=-Math.PI/2;floor.position.y=-.42;scene.add(floor);
+const ambient=new THREE.HemisphereLight(0xfff2d9,0x80684f,1.4);scene.add(ambient);
+const key=new THREE.DirectionalLight(0xffe7c7,2);key.position.set(-3,25,4);key.target.position.set(10,0,-10);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-18,right:18,top:18,bottom:-18,near:.5,far:70});key.shadow.normalBias=.025;scene.add(key,key.target);const fill=new THREE.DirectionalLight(0xe7efff,.8);fill.position.set(23,13,-15);scene.add(fill);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:0xd8d1c6,roughness:.9}));floor.rotation.x=-Math.PI/2;floor.position.y=-.42;floor.receiveShadow=true;scene.add(floor);
 const cv=([x,y,z])=>new THREE.Vector3(x,z,-y);
 const chapters=[
- ['Geral','Um Natal feito em família','Um mesmo universo ganha forma, movimento, calor e vínculo.',[30,-28,29],[10,10,.5]],
+ ['Geral','Um Natal feito em família','Um mesmo universo ganha forma, movimento, calor e vínculo.',[26,-20,24],[10,10,.5]],
  ['Entrada','Entrar no incompleto','O primeiro convite: vocês fazem, o Natal responde.',[14,-9,6],[9,5,1.2]],
  ['Tortuguita','Imaginar','A composição de formas deixa o primeiro sinal da família.',[8.7,3,5],[3.7,8,1]],
  ['Block','Fazer acontecer','Tentativa, ajuste e conquista se tornam movimento.',[10,9,5.5],[4,14.5,1]],
  ['Butter Toffees','Encontrar o outro','Dois gestos necessários. Um ritmo compartilhado.',[23,6,5.2],[16.2,11.8,1]],
  ['Clímax','Reconhecer','Forma, movimento e ritmo reaparecem na árvore coletiva.',[17,3,5.5],[11.7,10.5,1.5]],
  ['Bon o Bon','Passar adiante','A autoria ganha um destinatário. Para quem?', [20,-3,5],[15,4.5,1]],
- ['Planta','Um universo conectado','20 × 20 metros · quatro módulos por capítulo · passagens preservadas.',[10,9.99,34],[10,10,0]],
+ ['Planta','Um universo conectado','20 × 20 metros · quatro módulos por capítulo · passagens do estudo original.',[10,9.99,34],[10,10,0]],
  ['Backstage','Cuidar da operação','Materiais, reposição e organização do apoio.',[21,14,5],[17,19.23,1]]
 ];
 let goalPos=cv(chapters[0][3]),goalTarget=cv(chapters[0][4]),moving=false,current=0,touring=false,lastTour=0;
@@ -36,18 +36,18 @@ const routeGroup=new THREE.Group();routeGroup.visible=false;scene.add(routeGroup
 fetch('../validacao-256-rotas.json').then(r=>r.json()).then(data=>{const sample=data.routes[0];for(const leg of sample.legs){const geom=new THREE.BufferGeometry().setFromPoints(leg.points_m.map(([x,y])=>cv([x,y,.095])));const line=new THREE.Line(geom,new THREE.LineBasicMaterial({color:0x348578}));routeGroup.add(line)}}).catch(()=>status.textContent='Percurso indisponível. Maquete continua utilizável.');
 document.querySelector('#route').onclick=()=>{routeGroup.visible=!routeGroup.visible;document.querySelector('#route').textContent=routeGroup.visible?'Ocultar percurso':'Mostrar percurso';status.textContent=routeGroup.visible?'Exemplo T1 → B1 → BT1 → clímax → BO1. Há trechos compartilhados.':'Maquete pronta · 16 módulos'};
 let encounter=false,contributions=[];
-document.querySelector('#light').onclick=()=>{encounter=!encounter;document.querySelector('#light').textContent=encounter?'Luz de apresentação':'Luz de encontro';scene.background.set(encounter?0x25201d:0xe9e3d8);key.intensity=encounter?.8:3;fill.intensity=encounter?.5:2};
+document.querySelector('#light').onclick=()=>{encounter=!encounter;document.querySelector('#light').textContent=encounter?'Luz de apresentação':'Luz de encontro';scene.background.set(encounter?0x25201d:0xe9e3d8);key.intensity=encounter?.65:2;fill.intensity=encounter?.3:.8;ambient.intensity=encounter?.45:1.4};
 const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const loadingMessage=document.querySelector('#loading-message');
 async function loadMaquette(){
- const response=await fetch('../ARCOR_MAQUETE_HUNYUAN.glb',{signal:AbortSignal.timeout(120000)});
+ const response=await fetch('../ARCOR_MAQUETE_HUNYUAN.glb?v=ambientada-1',{signal:AbortSignal.timeout(120000)});
  if(!response.ok)throw new Error(`Model HTTP ${response.status}`);
  const total=Number(response.headers.get('content-length')),reader=response.body.getReader(),chunks=[];let bytes=0;
  while(true){const {done,value}=await reader.read();if(done)break;chunks.push(value);bytes+=value.length;loadingMessage.textContent=total?`Carregando maquete: ${Math.min(100,Math.round(bytes/total*100))}%`:`Carregando maquete: ${(bytes/1048576).toFixed(1)} MB`;}
  loadingMessage.textContent='Preparando materiais e detalhes…';
  const data=new Uint8Array(bytes);let offset=0;for(const chunk of chunks){data.set(chunk,offset);offset+=chunk.length;}
  const gltf=await loader.parseAsync(data.buffer,new URL('../',location.href).href);
- scene.add(gltf.scene);document.querySelector('#loading').hidden=true;status.textContent='Maquete pronta · 16 módulos';
+ gltf.scene.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});scene.add(gltf.scene);document.querySelector('#loading').hidden=true;status.textContent='Maquete pronta · 16 módulos';
  document.querySelectorAll('.tools button').forEach(b=>b.disabled=false);
 }
 document.querySelectorAll('.tools button').forEach(b=>b.disabled=true);
