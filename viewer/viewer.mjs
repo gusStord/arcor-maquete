@@ -40,7 +40,7 @@ document.querySelector('#light').onclick=()=>{encounter=!encounter;document.quer
 const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const loadingMessage=document.querySelector('#loading-message');
 async function loadMaquette(){
- const response=await fetch('../ARCOR_MAQUETE_HUNYUAN.glb?v=ambientada-1',{signal:AbortSignal.timeout(120000)});
+ const response=await fetch('../ARCOR_MAQUETE_HUNYUAN.glb?v=ambientada-2',{signal:AbortSignal.timeout(120000)});
  if(!response.ok)throw new Error(`Model HTTP ${response.status}`);
  const total=Number(response.headers.get('content-length')),reader=response.body.getReader(),chunks=[];let bytes=0;
  while(true){const {done,value}=await reader.read();if(done)break;chunks.push(value);bytes+=value.length;loadingMessage.textContent=total?`Carregando maquete: ${Math.min(100,Math.round(bytes/total*100))}%`:`Carregando maquete: ${(bytes/1048576).toFixed(1)} MB`;}

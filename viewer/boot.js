@@ -11,4 +11,4 @@ window.showMaquetteError = (error) => {
 };
 document.querySelector('#retry').onclick = () => location.reload();
 if (location.protocol === 'file:') window.showMaquetteError(new Error('HTTP is required for ES modules'));
-else import('./viewer.mjs?v=ambientada-1').catch(window.showMaquetteError);
+else import('./viewer.mjs?v=ambientada-2').catch(window.showMaquetteError);
