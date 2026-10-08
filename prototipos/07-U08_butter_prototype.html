@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07-U08 — Ensaio Butter Toffees</title>
+<style>
+  body { margin: 0; font: 18px/1.45 system-ui, sans-serif; background: #201927; color: #fff7ec; }
+  main { max-width: 800px; margin: auto; padding: 3rem 1rem; text-align: center; }
+  h1 { font-size: clamp(1.7rem, 5vw, 3rem); margin-bottom: .4rem; }
+  p { color: #e6d8d0; }
+  .controls { display: flex; gap: 1rem; margin: 2rem auto; }
+  button { flex: 1; min-height: 150px; border: 3px solid #ffe1a3; border-radius: 24px;
+    background: #795176; color: white; font: 700 1.25rem system-ui; cursor: pointer; touch-action: manipulation; }
+  button:nth-child(2) { background: #906342; }
+  button:focus-visible { outline: 4px solid white; outline-offset: 4px; }
+  #light { width: 110px; height: 110px; margin: auto; border-radius: 50%; background: #665663;
+    box-shadow: 0 0 0 10px #362b38; transition: background .25s, box-shadow .25s; }
+  #light.paired { background: #ffe7a7; box-shadow: 0 0 55px 20px #d99362; }
+  #light.complete { background: #fff4c8; box-shadow: 0 0 95px 45px #f4ae71; }
+  #status { min-height: 3rem; font-weight: 700; }
+  small { color: #d1bec3; }
+  @media (max-width: 550px) { .controls { flex-direction: column; } button { min-height: 100px; } }
+</style>
+<main>
+  <h1>Encontrem o mesmo ritmo</h1>
+  <p>Uma pessoa em cada lado. Toquem juntas, três vezes.</p>
+  <div id="light" aria-hidden="true"></div>
+  <div class="controls">
+    <button id="left" type="button">Lado 1 <small>tecla A</small></button>
+    <button id="right" type="button">Lado 2 <small>tecla L</small></button>
+  </div>
+  <div id="status" role="status" aria-live="polite">A luz espera vocês.</div>
+  <p id="progress">0 de 3 encontros</p>
+  <button id="reset" type="button" style="min-height:55px; max-width:200px">Recomeçar</button>
+  <p><small>Protótipo de teste. A/L ou toque; dois lados são necessários. Sem cadastro ou gravação.</small></p>
+</main>
+<script type="module">
+  import { createRhythm } from './src/07-U08_butter_rhythm.mjs';
+  let model = createRhythm();
+  const start = performance.now();
+  const status = document.querySelector('#status');
+  const progress = document.querySelector('#progress');
+  const light = document.querySelector('#light');
+  function render(result) {
+    const messages = { ready: 'A luz espera vocês.', waiting: 'O outro lado pode responder.',
+      paired: 'Vocês se encontraram!', adjust: 'Observem um ao outro e tentem de novo.',
+      idle: 'Vamos recomeçar juntos.', complete: 'Vocês criaram um ritmo juntos!' };
+    if (messages[result.event]) status.textContent = messages[result.event];
+    progress.textContent = `${result.pairs} de 3 encontros`;
+    light.className = result.completed ? 'complete' : result.event === 'paired' ? 'paired' : '';
+    if (result.event === 'paired') setTimeout(() => {
+      if (!model.snapshot().completed) light.className = '';
+    }, 650);
+    if (result.completed) {
+      document.querySelector('#left').disabled = true;
+      document.querySelector('#right').disabled = true;
+    }
+  }
+  function pulse(side) { render(model.pulse(side, performance.now() - start)); }
+  document.querySelector('#left').addEventListener('click', () => pulse(0));
+  document.querySelector('#right').addEventListener('click', () => pulse(1));
+  document.addEventListener('keydown', event => {
+    if (event.repeat) return;
+    if (event.key.toLowerCase() === 'a') pulse(0);
+    if (event.key.toLowerCase() === 'l') pulse(1);
+  });
+  document.querySelector('#reset').addEventListener('click', () => {
+    model = createRhythm();
+    document.querySelector('#left').disabled = false;
+    document.querySelector('#right').disabled = false;
+    render(model.snapshot());
+  });
+  setInterval(() => { const s = model.tick(performance.now() - start);
+    if (s.event === 'idle') render(s); }, 250);
+</script>
+</html>

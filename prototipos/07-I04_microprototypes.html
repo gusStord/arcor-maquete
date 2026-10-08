@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07-I04 — Ensaio de forma, movimento e ritmo</title>
+<style>
+  body { margin: 0; background: #201927; color: #fff7ec; font: 18px/1.4 system-ui, sans-serif; }
+  main { max-width: 850px; margin: auto; padding: 2rem 1rem 4rem; }
+  section { padding: 1.5rem; margin: 1rem 0; background: #3b3041; border-radius: 20px; }
+  button, select { padding: .85rem; margin: .25rem; border: 2px solid #eed8ac; border-radius: 12px;
+    font: inherit; color: #fff; background: #76516e; cursor: pointer; min-width: 90px; }
+  button:focus-visible, select:focus-visible { outline: 3px solid white; outline-offset: 3px; }
+  button[aria-pressed="true"] { background: #a16a48; border-color: #fff; }
+  .preview { min-height: 4rem; font-size: 3rem; color: #ffe3ad; }
+  #status { min-height: 2rem; } pre { white-space: pre-wrap; background: #211a29; padding: 1rem; }
+  small { color: #ded0d5; }
+</style>
+<main>
+  <h1>Um sinal começa a ganhar forma</h1>
+  <p>Ensaio de baixa fidelidade. As escolhas visuais e os gestos ainda precisam de teste presencial.</p>
+  <section>
+    <h2>Tortuguita — escolham uma forma</h2>
+    <div id="forms"></div><div class="preview" id="preview" aria-live="polite"></div>
+  </section>
+  <section>
+    <h2>Block — escolham um movimento e façam acontecer</h2>
+    <label>Modo de facilitação (não é guardado)
+      <select id="mode"><option>4-6</option><option>7-9</option><option>10-12</option></select>
+    </label>
+    <div id="routes"></div>
+    <p>Sigam as direções exibidas. Uma tentativa diferente recebe uma pista para ajustar.</p>
+    <div id="instructions" aria-live="polite"></div>
+    <div id="directions"></div><p id="status" role="status" aria-live="polite"></p>
+  </section>
+  <section>
+    <h2>Butter — encontrem o mesmo ritmo</h2>
+    <p>Uma pessoa em cada lado. Toquem juntas, três vezes.</p>
+    <button id="butter-left" type="button" disabled>Lado 1 (A)</button>
+    <button id="butter-right" type="button" disabled>Lado 2 (L)</button>
+    <p id="butter-status" role="status" aria-live="polite">Concluam a forma e o movimento para começar.</p>
+    <p id="butter-progress">0 de 3 encontros</p>
+    <button id="reset-family" type="button">Nova família</button>
+  </section>
+  <section>
+    <h2>Estado mínimo para o clímax</h2>
+    <pre id="state">Escolham a forma e concluam o movimento.</pre>
+    <button id="export-state" type="button" disabled>Baixar estado JSON</button>
+    <p><small>Ensaio técnico: o marcador “pulse” representa a conclusão dos pulsos compartilhados, não um ritmo pessoal medido. Sem identidade única ou reconhecimento humano demonstrado. Apenas forma, movimento e ritmo são exportados.</small></p>
+  </section>
+</main>
+<script type="module">
+  import { FORMS, ROUTES, selectForm, createBlock, composeCompletedState } from './src/07-I04_microprototypes.mjs';
+  import { createRhythm } from './src/07-U08_butter_rhythm.mjs';
+  const glyph = { star: '★', diamond: '◆', circle: '●', flower: '✿' };
+  const labels = { star: 'Estrela', diamond: 'Losango', circle: 'Círculo', flower: 'Flor',
+    orbit: 'Órbita', zigzag: 'Zigue-zague', rise: 'Subida', wave: 'Onda' };
+  const arrow = { up: '↑', down: '↓', left: '←', right: '→' };
+  let form = null, route = null, block = null;
+  let butter = createRhythm();
+  function output() {
+    try { return composeCompletedState({form}, block?.snapshot(), butter.snapshot()); }
+    catch { return null; }
+  }
+  const formBox = document.querySelector('#forms');
+  const routeBox = document.querySelector('#routes');
+  function state() {
+    const ready = Boolean(form && block?.snapshot().completed);
+    const result = output();
+    document.querySelector('#state').textContent = result ? JSON.stringify(result, null, 2)
+      : ready ? 'Concluam os três encontros em Butter para exportar.' : 'Escolham a forma e concluam o movimento.';
+    document.querySelector('#export-state').disabled = !result;
+    for (const id of ['butter-left', 'butter-right']) document.getElementById(id).disabled = !ready || butter.snapshot().completed;
+  }
+  function renderButter(result) {
+    const messages = {ready:'A luz espera vocês.', waiting:'O outro lado pode responder.', paired:'Vocês se encontraram!',
+      adjust:'Observem um ao outro e tentem de novo.', idle:'Vamos recomeçar juntos.', complete:'Ritmo registrado. A assinatura está pronta.'};
+    document.querySelector('#butter-status').textContent = form && block?.snapshot().completed
+      ? messages[result.event] : 'Concluam a forma e o movimento para começar.';
+    document.querySelector('#butter-progress').textContent = `${result.pairs} de 3 encontros`;
+    state();
+  }
+  function resetButter() { butter = createRhythm(); renderButter(butter.snapshot()); }
+  function pulse(side) {
+    if (!form || !block?.snapshot().completed || butter.snapshot().completed) return;
+    renderButter(butter.pulse(side, performance.now()));
+  }
+  document.querySelector('#butter-left').addEventListener('click', () => pulse(0));
+  document.querySelector('#butter-right').addEventListener('click', () => pulse(1));
+  document.addEventListener('keydown', e => {
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || ['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) return;
+    if (e.key.toLowerCase() === 'a') pulse(0);
+    if (e.key.toLowerCase() === 'l') pulse(1);
+  });
+  setInterval(() => {const result=butter.tick(performance.now()); if(result.event==='idle') renderButter(result);},250);
+  document.querySelector('#export-state').addEventListener('click', () => {
+    const result=output(); if(!result) return;
+    const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)+'\n'],{type:'application/json'}));
+    const link=document.createElement('a');link.href=url;link.download='assinatura-familiar.json';link.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  });
+  document.querySelector('#reset-family').addEventListener('click', () => {
+    form=null;route=null;block=null;document.querySelector('#mode').value='4-6';
+    for(const b of [...formBox.children,...routeBox.children]) b.setAttribute('aria-pressed','false');
+    document.querySelector('#preview').textContent='';document.querySelector('#instructions').textContent='';
+    document.querySelector('#status').textContent='';resetButter();
+  });
+  function button(container, title, onClick) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = title;
+    b.addEventListener('click', onClick); container.append(b); return b;
+  }
+  for (const value of FORMS) button(formBox, `${glyph[value]} ${labels[value]}`, () => {
+    form = selectForm(value).form;
+    resetButter();
+    document.querySelector('#preview').textContent = glyph[value];
+    for (const b of formBox.children) b.setAttribute('aria-pressed', String(b.textContent.includes(labels[value])));
+    state();
+  });
+  function render(result) {
+    const messages = { ready: 'Façam o percurso juntos.', progress: 'O ambiente respondeu. Continuem.',
+      adjust: 'Observem a próxima direção e ajustem.', assist: 'Uma etapa a menos. Tentem juntos.',
+      complete: 'Conquista da família! O movimento foi registrado.' };
+    document.querySelector('#status').textContent = messages[result.event];
+    document.querySelector('#instructions').textContent = result.completed
+      ? 'Percurso concluído.'
+      : `Próxima direção: ${arrow[result.next]} — ${result.progress} de ${result.targetLength}`;
+    state();
+    if(result.completed && butter.snapshot().pairs===0) renderButter(butter.snapshot());
+  }
+  function resetBlock() {
+    if (!route) return;
+    block = createBlock(document.querySelector('#mode').value, route);
+    resetButter();
+    render(block.snapshot());
+  }
+  for (const value of Object.keys(ROUTES)) button(routeBox, labels[value], () => {
+    route = value; resetBlock();
+    for (const b of routeBox.children) b.setAttribute('aria-pressed', String(b.textContent === labels[value]));
+  });
+  document.querySelector('#mode').addEventListener('change', resetBlock);
+  const directionBox = document.querySelector('#directions');
+  for (const value of ['up', 'left', 'right', 'down']) {
+    button(directionBox, arrow[value], () => { if (block) render(block.step(value)); });
+  }
+</script>
+</html>

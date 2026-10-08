@@ -1,0 +1,40 @@
+{
+  "model_bytes_before": 37832768,
+  "model_bytes_after": 6536236,
+  "sha256": "22fbd04102f3e1a33dfad06b41117f956b34ba5adf7878d3e58b96e7c98b1592",
+  "before": {
+    "min": [
+      -0.015000001527369022,
+      -0.36000001430511475,
+      -20.01060676574707
+    ],
+    "max": [
+      20.01060676574707,
+      3.178431212092993,
+      0.014999999664723873
+    ]
+  },
+  "after": {
+    "min": [
+      -0.015564080154357285,
+      -0.35944884287142087,
+      -20.01109315672637
+    ],
+    "max": [
+      20.01060676574707,
+      3.1784198065993468,
+      0.014999999664723873
+    ]
+  },
+  "three_version": "0.186.1",
+  "module_files": [
+    "build\\three.module.js",
+    "build\\three.core.js",
+    "examples\\jsm\\controls\\OrbitControls.js",
+    "examples\\jsm\\loaders\\GLTFLoader.js",
+    "examples\\jsm\\utils\\BufferGeometryUtils.js",
+    "examples\\jsm\\utils\\SkeletonUtils.js",
+    "examples\\jsm\\libs\\meshopt_decoder.module.js"
+  ],
+  "images": 14
+}
